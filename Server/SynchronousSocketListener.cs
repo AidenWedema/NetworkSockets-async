@@ -2,7 +2,13 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-
+/*
+ * 
+ * Control too limited switched over to sockets
+ * also want asynchronous for unity 
+ * 
+ * 
+ */
 
 public class SynchronousSocketListener
 {
