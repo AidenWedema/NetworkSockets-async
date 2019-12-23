@@ -16,10 +16,10 @@ namespace Client
         private static byte[] buffer = new byte[1024];
         public bool connected = false;
 
-        public SocketClientTCP()
+        public SocketClientTCP(int aPort = 100)
         {
             address = IPAddress.Parse("127.0.0.1");
-            port = 100;
+            port = aPort;
 
 
             entry = Dns.GetHostEntry("localhost");
@@ -33,27 +33,17 @@ namespace Client
         {
             try
             {
-                //clientSocket.BeginConnect(endPoint, new AsyncCallback(AttemptConnectionCallback), clientSocket);
-                /*
-                TcpListener l = new TcpListener(IPAddress.Loopback, 0);
-                l.Start();
-                port = ((IPEndPoint)l.LocalEndpoint).Port;
-                l.Stop();
-                */
-
-                //clientSocket.Bind(new IPEndPoint(IPAddress.Any, port));
-                //clientSocket.Listen(10);
                 clientSocket.BeginConnect("localhost", port, new AsyncCallback(AttemptConnectionCallback), clientSocket); 
 
             }catch(Exception e)
             {
-                Console.WriteLine(e.ToString());
+                Console.WriteLine(e.Message);
             }
         }
-        int attempts = 0;
+
+        private int attempts = 0;
         private void AttemptConnectionCallback(IAsyncResult ar)
         {
-            
             try
             {
                 attempts++;
@@ -65,13 +55,9 @@ namespace Client
             }
             catch (SocketException e)
             {
-                //Console.Clear();
-                //Console.WriteLine("Connection attempts: " + attempts.ToString());
-                Console.WriteLine(e.ToString());
+                Console.WriteLine(e.Message);
                 clientSocket.BeginConnect("localhost", port, new AsyncCallback(AttemptConnectionCallback), clientSocket);
             }
-
-            
         }
 
 
@@ -83,7 +69,7 @@ namespace Client
             }
             catch(SocketException e)
             {
-                Console.WriteLine(e.ToString());
+                Console.WriteLine(e.Message);
             }
         }
 
@@ -101,7 +87,7 @@ namespace Client
             }
             catch (SocketException e)
             {
-                Console.WriteLine(e.ToString());
+                Console.WriteLine(e.Message);
 
                 Console.WriteLine("Disconnected.. trying to reconnect");
                 clientSocket.Dispose();

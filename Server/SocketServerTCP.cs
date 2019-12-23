@@ -22,19 +22,30 @@ namespace Server
 
         private void SetupServer()
         {
-            serverSocket.Bind(new IPEndPoint(IPAddress.Any, 100));
-            serverSocket.Listen(1);
-            serverSocket.BeginAccept(new AsyncCallback(AcceptCallback), null);
-            Console.WriteLine("Server accepting people");
+            try
+            {
+                serverSocket.Bind(new IPEndPoint(IPAddress.Any, 100));
+                serverSocket.Listen(1);
+                serverSocket.BeginAccept(new AsyncCallback(AcceptCallback), null);
+                Console.WriteLine("Server accepting people");
+            }catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         private static void AcceptCallback(IAsyncResult ar)
         {
-            Socket aClient = serverSocket.EndAccept(ar);
-            clientSockets.Add(aClient);
-            aClient.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), aClient);
-            serverSocket.BeginAccept(new AsyncCallback(AcceptCallback), null);
-            Console.WriteLine("server accepted: " + aClient.RemoteEndPoint);
+            try { 
+                Socket aClient = serverSocket.EndAccept(ar);
+                clientSockets.Add(aClient);
+                aClient.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), aClient);
+                serverSocket.BeginAccept(new AsyncCallback(AcceptCallback), null);
+                Console.WriteLine("server accepted: " + aClient.RemoteEndPoint);
+            }catch(Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
         }
 
         private static void ReceiveCallback(IAsyncResult ar)
@@ -50,12 +61,10 @@ namespace Server
                 Console.WriteLine("Text received: " + text);
                 aClient.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), aClient);
             }
-            catch (SocketException)
+            catch (Exception e)
             {
-
+                Console.WriteLine(e.Message);
             }
-            //logics
-            
         }
         public void SendAll(string aMessage)
         {
@@ -77,7 +86,7 @@ namespace Server
                     
                 }catch(Exception e)
                 {
-                    Console.WriteLine(e.ToString());
+                    Console.WriteLine(e.Message);
                 }
                 
             }
@@ -100,9 +109,9 @@ namespace Server
                 Socket aClient = (Socket)ar.AsyncState;
                 aClient.EndSend(ar);
             }
-            catch(SocketException)
+            catch(Exception e)
             {
-
+                Console.WriteLine(e.Message);
             }
         }
     }
