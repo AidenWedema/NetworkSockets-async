@@ -1,44 +1,42 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace Client
+namespace Networking
 {
     class SocketClientTCP
     {
         private static Socket clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         private IPAddress address;
-        private IPHostEntry entry;
-        private EndPoint endPoint;
         private int port;
-        private static byte[] buffer = new byte[1024];
+        private static byte[] buffer = new byte[2048];
         public bool connected = false;
 
-        public SocketClientTCP(int aPort = 100)
+        public SocketClientTCP(string anAddress = "127.0.0.1", int aPort = 8080)
         {
-            address = IPAddress.Parse("127.0.0.1");
+            if (clientSocket != null) StopClient();
+            clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            address = IPAddress.Parse(anAddress);
             port = aPort;
-
-
-            entry = Dns.GetHostEntry("localhost");
-            endPoint = new IPEndPoint(address, port);//entry.AddressList[0];
-            
         }
-
-
 
         public void AttemptConnection()
         {
             try
             {
-                clientSocket.BeginConnect("localhost", port, new AsyncCallback(AttemptConnectionCallback), clientSocket); 
-
-            }catch(Exception e)
+                clientSocket.BeginConnect(address, port, new AsyncCallback(AttemptConnectionCallback), clientSocket);
+            }
+            catch (Exception e)
             {
                 Console.WriteLine(e.Message);
             }
+        }
+
+        public void AttemptConnection(string anAddress = "127.0.0.1", int aPort = 8080)
+        {
+            address = IPAddress.Parse(anAddress);
+            port = aPort;
+            AttemptConnection();
         }
 
         private int attempts = 0;
@@ -56,10 +54,9 @@ namespace Client
             catch (SocketException e)
             {
                 Console.WriteLine(e.Message);
-                clientSocket.BeginConnect("localhost", port, new AsyncCallback(AttemptConnectionCallback), clientSocket);
+                clientSocket.BeginConnect(address, port, new AsyncCallback(AttemptConnectionCallback), clientSocket);
             }
         }
-
 
         private void Receive()
         {
@@ -67,7 +64,7 @@ namespace Client
             {
                 clientSocket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), null);
             }
-            catch(SocketException e)
+            catch (SocketException e)
             {
                 Console.WriteLine(e.Message);
             }
@@ -77,19 +74,19 @@ namespace Client
         {
             try
             {
-                    int received = clientSocket.EndReceive(ar);
+                int received = clientSocket.EndReceive(ar);
 
-                    byte[] tempBuffer = new byte[received];
-                    Array.Copy(buffer, tempBuffer, received);
-                    string text = Encoding.ASCII.GetString(tempBuffer);
-                    Console.WriteLine("Text received: " + text);
-                    clientSocket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), null);
+                byte[] tempBuffer = new byte[received];
+                Array.Copy(buffer, tempBuffer, received);
+                string text = Encoding.ASCII.GetString(tempBuffer);
+                Console.WriteLine(text);
+                clientSocket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), null);
             }
             catch (SocketException e)
             {
                 Console.WriteLine(e.Message);
 
-                Console.WriteLine("Disconnected.. trying to reconnect");
+                Console.WriteLine("Disconnected.. trying to reconnect", 2);
                 clientSocket.Dispose();
                 clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 AttemptConnection();
@@ -100,15 +97,14 @@ namespace Client
         {
             try
             {
-                
                 byte[] buffer = Encoding.ASCII.GetBytes(aMessage);
                 clientSocket.BeginSend(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(SendCallback), null);
-                Console.WriteLine("Client Sending: " + aMessage);
-            }catch(Exception e)
-            {
-                Console.WriteLine(e.ToString());
             }
-            
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString(), 2);
+            }
+
         }
 
         private void SendCallback(IAsyncResult ar)
@@ -116,11 +112,32 @@ namespace Client
             try
             {
                 clientSocket.EndSend(ar);
-                
             }
-            catch(SocketException)
+            catch (SocketException)
             {
 
+            }
+        }
+
+        public void StopClient()
+        {
+            if (clientSocket == null) return;
+            try
+            {
+                if (clientSocket.Connected)
+                {
+                    clientSocket.Shutdown(SocketShutdown.Both);
+                }
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            finally
+            {
+                clientSocket.Close();
+                clientSocket = null;
+                connected = false;
             }
         }
     }
